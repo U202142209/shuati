@@ -1,0 +1,30 @@
+{% extends 'base.html'%}
+{% load static %}
+{% block title %}智能在线答题系统{% endblock %}
+{% block css %}
+<style>
+ body {
+      background-color: #f8f9fa;
+    }
+
+
+
+</style>
+{% endblock %}
+{% block content %}
+<div class="error-container">
+    <h1>警告</h1>
+    <h2>发生了错误</h2>
+    <h1 class="error-code">{{ msg }}</h1>
+    <p class="error-message">Oops! The page you are looking for could not be found.</p>
+    <a href="/shuati_app/" class="btn btn-primary error-link">返回首页</a>
+  </div>
+{% endblock %}
+
+
+
+{% block js %}
+<script>
+
+</script>
+{% endblock %}

@@ -1,0 +1,145 @@
+{% extends 'base.html'%}
+{% load static %}
+{% block title %}智能在线答题系统{% endblock %}
+{% block css %}
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background-color: #f2f2f2;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-xs-1 col-md-4"></div>
+    <div class="col-xs-10 col-md-4 login-content" id="index-form">
+        <template v-if="data['data'].length>0">
+            <h1 class="tac">请选择题目分类标签</h1>
+            <div class="row">
+                <form class="navbar-form navbar-right" role="search">
+                    <div class="form-group">
+                        <input id="addnewtagname" type="text" class="form-control" placeholder="请输入关键字搜索题目标签">
+                    </div>
+                    <button @click="getAllTagsApi(1)" class="btn btn-primary">搜索</button>
+                </form>
+            </div>
+            <ul class="list-group" v-for="(item, index) in data['data']">
+                <h4>
+                    <span class="badge bg-secondary" v-text="index+1"></span>
+
+                    <a v-bind:href="'/shuati_app/tagdetail?tagid='+item.nid" v-text="item.tag" ></a>
+                    <!-- <span class="badge bg-info" v-text="item.create_time"></span> -->
+                    <span class="badge bg-info" style="float: right;" v-text=" '题库数量：'+ item.question_num"></span>
+                </h4>
+            </ul>
+            <!-- 分页 -->
+            <div class="row mt-3">
+                <div class="col-md-12 text-center">
+                    <ul class="pagination">
+                        <li v-for="n in taglen" :key="n" class="page-item" 
+                        v-bind:class="{ 'page-item active':currentpage == n }"
+                        @click="getAllTagsApi( n )">
+                            <a class="page-link" v-text="n" href="#"></a>
+                    </ul>
+                </div>
+            </div>
+        </template>
+        <template v-else>
+            <template v-if="data['code']==-1">
+
+            </template>
+            <template v-else-if="data['code']!=200">
+                <h3 class="tac" v-text="data.msg"></h3>
+            </template>
+            <template v-else>
+                <div style="text-align: center">
+                    <p>正在加载数据，请稍后...</p>
+                    <img src="https://ts1.cn.mm.bing.net/th/id/R-C.315fa32ec1267f7c20c54d7a7b0993ee?rik=UthL2y3pgbly8g&riu=http%3a%2f%2fpycn.api.3866866.com%2fstatic%2findex%2fimg%2fucenter%2fjzz.gif&ehk=X7m8Y%2fyJ4%2bAk5%2fbUke2N5qp%2bNGyZr1HpHYjs5mCnSBY%3d&risl=&pid=ImgRaw&r=0"
+                        alt="" width="30%">
+                </div>
+            </template>
+        </template>
+        <caption>
+            <div class="tac" style="margin: 5%;">
+                <span><span><img height="20px"
+                            src="http://www.gewulab.com/files/testpaper/106/2023/04-24/2214477e79a8302098.jpg"
+                            alt=""></span></span>
+                <span>made by:@我不是大佬 wx：safeseaa</span>
+            </div>
+        </caption>
+    </div>
+</div>
+
+{% endblock %}
+
+
+
+{% block js %}
+<script src="{% static 'js/vue0.js' %}"></script>
+<script>
+    function setRandomColor() {
+        // 获取所有的字div元素
+        const divs = document.querySelectorAll('#taitemsmother div');
+        // 遍历每个字div元素
+        divs.forEach(div => {
+            // 生成随机的RGB颜色值
+            // const randomColor = `rgb(${Math.floor(Math.random() * 256)}, ${Math.floor(Math.random() * 256)}, ${Math.floor(Math.random() * 256)})`;
+            const randomColor = `rgb(255,255,255}`;
+            // 设置背景色为随机颜色
+            div.style.backgroundColor = white;
+        });
+    }
+    var app = new Vue({
+        el: "#index-form",
+        data: {
+            data: {
+                "code": -1,
+                "data": [],
+                "msg": "",
+                "status": "",
+                taglen: 10,
+                searchtagname: "",
+                currentpage:1,
+            },
+
+        },
+        methods: {
+            getAllTagsApi(page = 1) {
+                //  getAllTags
+                app.data.code = 1;
+                app.data.data = [];
+                app.currentpage=page
+                $.ajax({
+                    url: "/shuati_app/admin_selecttag",
+                    dataType: "JSON",
+                    type: "get",
+                    data: {
+                        "safksa": 200,
+                        "page": page,
+                        tagname:$("#addnewtagname").val()
+                    },
+                    success: function (res) {
+                        app.data = res;
+                        app.taglen = Math.ceil(res.len / 10)
+                        if (!app.data.status) {
+                            alert("没有获取到数据")
+                        }
+                        console.log(app.data["data"]);
+                        // 延迟0.1秒后执行函数
+                        setTimeout(setRandomColor, 100);
+                    },
+                    error: function (res) {
+                        console.log(res)
+                        alert("系统发生了错误，无法加载数据")
+                    }
+                })
+            },
+        },
+    })
+
+    $(document).ready(function () {
+        app.getAllTagsApi(1)
+    });
+</script>
+{% endblock %}

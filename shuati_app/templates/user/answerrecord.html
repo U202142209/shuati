@@ -1,0 +1,207 @@
+{% extends 'base.html'%}
+{% load static %}
+{% block title %} 答题记录 {% endblock %}
+{% block css %}
+<style>
+    .blog-item {
+        padding: 1%;
+    }
+
+    .blog-item:hover {
+        background-color: #efefef;
+    }
+</style>
+{% endblock %}
+{% block content %}
+<div id="recordApp" class="recordApp row" data-user_username="{{ user_username }}" data-user_email="{{user_email}}">
+    <div class="col-xs-1"> </div>
+    <div class="col-xs-10 col-md-6">
+        <h1 class="tac">个人答题记录</h1>
+        <div class="row">
+            <form class="navbar-form navbar-right" role="search">
+                <div class="col-md-4 text-right">
+                    <select v-model="isfinderrorbook" name="isfinderrorbook" class="form-control">
+                        <option selected="true" value="0">--查询所有--</option>
+                        <option value="1">--查询错题本--</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <input v-model="keywords" id="keywords" type="text" class="form-control" placeholder="请输入题目关键字">
+                </div>
+                <button type="button" @click="getMyRecoed(1)" class="btn btn-primary text-right">搜索</button>
+            </form>
+        </div>
+        <template v-if="haverecord">
+            <div v-for="(item, index) in recorddata" class="blog-item">
+                <div class="row">
+                    <div class="col-xs-12">
+                        <span v-text="index+1+' 分类 / '+item.tag" class="badge bg-secondary"></span>
+                        <a v-if="item.isInErrorBook" href="#" @click="removefromErrorBook(item.question_id)"
+                            class="fr btn btn-warning">移出错题本</a>
+                        <a v-else href="#" @click="addintoErrorBook(item.question_id)"
+                            class="fr btn btn-success">加入错题本</a>
+                    </div><br>
+                    <div class="col-xs-12">
+                        <h4 v-text="'题目描述:'+item.question_content"></h4>
+                    </div>
+
+                    <div v-for="(val,key,i) in item.options" :key="i" class="form-check col=xs-6"
+                        v-bind:class="{ 'background-yellow': item.correct_answer == key }" v-bind:id="'div'+key">
+                        <input name="myanswer" v-bind:id="'flexRadioDefault'+key" class="form-check-input" type="radio"
+                            v-bind:value="key" required>
+                        <label v-text="key+' . '+val" class="form-check-label" v-bind:for="'flexRadioDefault'+key">
+                        </label>
+                    </div>
+                    <div class="col-xs-12">
+                        <p>
+                            <span
+                                v-text="'我的答案:'+item.answer+'&ensp;&ensp;&ensp;&ensp;正确答案:'+item.correct_answer"></span>
+                            <span v-if="item.is_correct"
+                                class="fontgreen">&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;回答正确</span>
+                            <span v-else class="fontred">&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;回答错误</span>
+                        </p>
+                        <p v-text="'题目解析:'+item.answer_detail"></p>
+                    </div>
+                    <div class="col-xs-12">
+                        <p><span v-text="'作答时间:&ensp;&ensp;'+item.create_time"></span></p>
+                        <p>
+                            <span v-text="'答题人数：'+item.answer_num">&ensp;&ensp;</span>
+                            <span v-text="'&ensp;&ensp;&ensp;&ensp;题目正确率：'+item.correctPercent">&ensp;&ensp;</span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <h3 class="pagination">
+                <li v-for="n in taglen" :key="n" class="page-item"
+                    v-bind:class="{ 'page-item active':currentpage == n }" @click="getMyRecoed(n)">
+                    <a class="page-link" v-text="n" href="#"></a>
+                </li>
+        </template>
+        <template v-else>
+            <div class="error-container">
+                <h1 class="error-code" v-text="msg"></h1>
+            </div>
+        </template>
+    </div>
+    <div class="col-xs-1"></div>
+    <div id="myrecorddata" class="tac col-xs-12 col-md-3">
+        <h3 class="tac">数据中心</h3><br>
+        <h4>我的答题总数:
+            <span class="">{{ totalQuestionNum }}</span>
+        </h4>
+        <h4>我的刷题正确率:
+            <span class="">{{totalCorrectPercentage}}</span>
+        </h4>
+    </div>
+    </template>
+</div>
+<!--悬浮窗口-->
+<div id="window" class="window_css">
+    <a class="fr" href="javascript:void(0)" onclick="hideWindow()">
+        关闭悬浮窗口❌
+    </a>
+</div>
+<!--出现悬浮窗口后,背景变暗-->
+<div id="shadow" class="shadow_css"></div>
+<!-- 到日自定以JavaScript文件 -->
+<script src="{% static 'js/common.js' %}"></script>
+
+{% endblock %}
+{% block js %}
+<script>
+    // 答题记录
+    var recordApp = new Vue({
+        el: "#recordApp",
+        data: {
+            useremail: "",
+            username: "",
+            haverecord: false,
+            msg: "",
+            recorddata: [],
+            keywords: "",
+            taglen: 10,
+            currentpage: 1,
+            isfinderrorbook: 0,
+        },
+        methods: {
+            getMyRecoed(page = 1) {
+                recordApp.haverecord = false;
+                recordApp.msg = "";
+                recordApp.recorddata = [];
+                recordApp.currentpage = page
+                $.ajax({
+                    url: "/shuati_app/getRecord/",
+                    dataType: "JSON",
+                    type: "get",
+                    data: {
+                        username: recordApp.username,
+                        email: recordApp.useremail,
+                        keywords: recordApp.keywords,
+                        page: page,
+                        isfinderrorbook:recordApp.isfinderrorbook
+                    },
+                    success: function (res) {
+                        recordApp.haverecord = res.status
+                        recordApp.msg = res.msg
+                        if (res.status)
+                            recordApp.recorddata = res.data;
+                        recordApp.taglen = Math.ceil(res.len / 10);
+                    },
+                    error: function (res) {
+                        console.log(res)
+                        alert("系统发生了错误，无法加载数据")
+                    }
+                })
+            },
+            getQuestionDetail() {
+                displayWindow()
+            },
+            addintoErrorBook(question_id) {
+                $.ajax({
+                    url: "/shuati_app/addintoErrorBook/",
+                    dataType: "JSON",
+                    type: "get",
+                    data: {
+                        question_id: question_id
+                    },
+                    success: function (res) {
+                        recordApp.getMyRecoed(1)
+                        alert(res.msg)
+                    },
+                    error: function (res) {
+                        console.log(res)
+                        alert("系统发生了错误，无法加载数据")
+                    }
+                })
+            },
+            removefromErrorBook(question_id) {
+                $.ajax({
+                    url: "/shuati_app/removefromErrorBook/",
+                    dataType: "JSON",
+                    type: "get",
+                    data: {
+                        question_id: question_id
+                    },
+                    success: function (res) {
+                        recordApp.getMyRecoed(1)
+                        alert(res.msg)
+                    },
+                    error: function (res) {
+                        console.log(res)
+                        alert("系统发生了错误，无法加载数据")
+                    }
+                })
+            }
+        }
+    })
+
+
+    $(document).ready(function () {
+        recordApp.username = $("#recordApp").data("user_username")
+        recordApp.useremail = $("#recordApp").data("user_email")
+        // 获取信息
+        recordApp.getMyRecoed(1)
+    });
+
+</script>
+{% endblock %}

@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>扇形图实例</title>
+</head>
+
+
+<meta name="viewport" content="width=device-width" />
+<meta charset="UTF-8" />
+<title>Pie</title>
+{% load static %}
+<link rel="stylesheet" href="{% static 'css/common.css' %}">
+<script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script src="https://cdn.bootcdn.net/ajax/libs/echarts/5.3.1/echarts.min.js"></script>
+
+<style type="text/css">
+    html {
+        height: 100%;
+        margin: 0;
+    }
+
+
+</style>
+
+<div id="main" style="width: 100%;height:100%;">
+</div>
+<script type="text/javascript">
+    // 基于准备好的dom，初始化echarts实例
+    var myChart = echarts.init(document.getElementById('main'));
+    var data = {
+        "data_pie": [
+            { "value": 50, "name": "#1" },
+            { "value": 50, "name": "#2" },
+            { "value": 50, "name": "#3" },
+            { "value": 50, "name": "#4" },
+            { "value": 50, "name": "#5" }
+        ]
+    };
+    myChart.setOption({
+        title: {
+            text: '扇形图展示',
+            subtext: '测试数据',
+            left: 'center'
+        },//标题
+        tooltip: {
+            trigger: 'item',
+            formatter: '{a} <br/>{b} : {c} ({d}%)'
+        },//鼠标移入属性
+        series: [
+            {
+                name: '第一圈',
+                type: 'pie',
+                label: {
+                    normal: {
+                        show: false,
+                    }
+                },
+                center: ['50%', '60%'],
+                radius: ['0%', '40%'],
+                data: data.data_pie
+            },
+            {
+                name: '第二圈',
+                type: 'pie',
+                radius: ['40.2%', '55%'],
+                label: {
+                    normal: {
+                        show: false,
+                    }
+                },
+                center: ['50%', '60%'],
+                data: data.data_pie
+            },
+            {
+                name: '第三圈',//pie名称
+                type: 'pie',//形状类型
+                radius: ['55.2%', '80%'],//扇形
+                center: ['50%', '60%'],//图形位置
+                data: data.data_pie//数据源
+            }
+        ]
+    });
+</script>

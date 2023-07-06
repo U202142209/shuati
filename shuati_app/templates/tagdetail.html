@@ -1,0 +1,244 @@
+{% extends 'base.html'%}
+{% load static %}
+{% block title %}智能在线答题系统{% endblock %}
+{% block css %}
+<style>
+
+</style>
+{% endblock %}
+{% block content %}
+<div id="tag_detail" class="tag_detail row">
+    <div class="col-xs-1"> </div>
+    <div class="col-xs-11 col-md-7">
+        <h3 id="question_tag" data-tag_tag="{{ tag_tag }}" data-tag_nid="{{ tag_nid }}"
+            data-user_username="{{ user_username }}" data-user_email="{{user_email}}" class="tac">题目分类 / {{ tag_tag }}
+        </h3>
+        <template v-if="havegetquestion">
+            <h3>单选题题目</h3>
+            <form>
+                <div class="form-group">
+                    <h4><label for="question" v-text="'题目描述：'+question_data['question_content']"></label></h4>
+                </div>
+                <div class="form-group" style="font-size: large;">
+                    <div v-for="(val,key,i) in question_data['options'] " :key="i" class="form-check"
+                        v-bind:id="'div'+key">
+                        <input name="myanswer" v-bind:id="'flexRadioDefault'+key" class="form-check-input" type="radio"
+                            v-bind:value="key" required>
+                        <label v-text="key+' . '+val" class="form-check-label" v-bind:for="'flexRadioDefault'+key">
+                        </label>
+                    </div>
+                </div>
+                <div v-if="haveanswered" class="form-group">
+                    <h4 class="fontgreen">提交成功</h4>
+                    <h4 v-text="'我的答案:'+myanswer"></h4>
+                    <h4 v-text="'正确答案:'+correct_answer"></h4>
+                    <template v-if="is_correct">
+                        <h4 class="fontgreen">回答正确</h4>
+                    </template>
+                    <template v-else>
+                        <h4 class="fontred">回答错误</h4>
+                    </template>
+                    <h4 v-text="'题目解析:'+answer_detail"></h4>
+                </div>
+                <div class="form-group">
+                    <button v-on:click="refreshpage" type="button" class="btn btn-warning">刷新页面</button>
+                    <template v-if="haveanswered">
+                        <button v-on:click="getRandomQuestion" type="button" class="btn btn-info">下一题</button>
+                        <button v-if="haveaddintoerrorbook" type="button" class="btn btn-success">已加入错题本</button>
+                        <button v-else @click="addintoErrorBook(current_question_id)" type="button"
+                            class="btn btn-primary">加入错题本</button>
+                    </template>
+                    <template v-else>
+                        <button v-on:click="submitAnswer" type="button" class="btn btn-success">提交答案</button>
+                    </template>
+                </div>
+            </form>
+        </template>
+        <template v-else>
+            <div class="error-container">
+                <h1 class="error-code" v-text="msg"></h1>
+            </div>
+        </template>
+    </div>
+</div>
+
+{% endblock %}
+
+
+
+{% block js %}
+<script>
+    var tagapp = new Vue({
+        el: "#tag_detail",
+        data: {
+            // 标签名
+            tag_tag: "",
+            // 标签id
+            tag_nid: "",
+            // 用户名
+            user_username: "",
+            // 题目信息，问题、选项
+            question_data: {},
+            // 已经写完的题目id列表
+            answered_questions_ids: [],
+            // 当前的题目索引
+            current_question_id_index: 0,
+            // 我的答案
+            myanswer: "A",
+            // 正确答案
+            correct_answer: "B",
+            // 是否回答正确
+            is_correct: false,
+            // 是否已经写完题目
+            haveanswered: false,
+            // 当前问题的id
+            current_question_id: "",
+            // 是否获取到题目
+            havegetquestion: false,
+            // 消息提示
+            msg: "",
+            // 题目解析
+            answer_detail: "无",
+            haveaddintoerrorbook: false,
+
+        },
+        methods: {
+            getRandomQuestion() {
+                tagapp.question_data = {}
+                tagapp.haveanswered = false
+                $.ajax({
+                    url: "/shuati_app/getRandomQuestion",
+                    dataType: "JSON",
+                    type: "get",
+                    data: {
+                        username: tagapp.user_username,
+                        email: tagapp.user_email,
+                        tag_tag: tagapp.tag_tag,
+                        tag_nid: tagapp.tag_nid
+                    },
+                    success: function (res) {
+                        if (res.status) {
+                            // 展示题目信息
+                            tagapp.question_data = res.data
+                            tagapp.answered_questions_ids.push(res.data["question_id"]);
+                            tagapp.current_question_id_index++;
+                            tagapp.current_question_id = res.data["question_id"];
+                            // 获取到了题目
+                            tagapp.havegetquestion = true
+                            tagapp.haveaddintoerrorbook = false
+                        }
+                        else {
+                            tagapp.havegetquestion = false
+                            tagapp.msg = res.msg
+                        }
+                    },
+                    error: function (res) {
+                        tagapp.havegetquestion = false
+                        alert("系统发生了错误，无法加载数据，请联系系统管理员解决")
+                    }
+                })
+            },
+            // 提交答案
+            submitAnswer() {
+                $.ajax({
+                    url: "/shuati_app/submitAnswer",
+                    dataType: "JSON",
+                    type: "get",
+                    data: {
+                        username: tagapp.user_username,
+                        email: tagapp.user_email,
+                        tag_tag: tagapp.tag_tag,
+                        tag_nid: tagapp.tag_nid,
+                        answer: $('input[name="myanswer"]:checked').val(),
+                        question_id: tagapp.current_question_id,
+
+                    },
+                    success: function (res) {
+                        if (res.status) {
+                            // 展示题目信息
+                            // 更新我的答案
+                            tagapp.myanswer = res.data["my_answer"]
+                            // 更新正确答案
+                            tagapp.correct_answer = res.data["correct_answer"]
+                            // 更新是否回答正确
+                            tagapp.is_correct = res.data["result"]
+                            tagapp.answer_detail = res.data["answer_detail"];
+                            // 修改已经回答
+                            tagapp.haveanswered = true
+                            // 将答案的背景变成黄色
+                            var divid = '#div' + res.data["correct_answer"]
+                            $(divid).css('background-color', 'yellow');
+                        }
+                        else {
+                            tagapp.msg = res.msg
+                            alert(res.msg)
+                        }
+                    },
+                    error: function (res) {
+                        console.log(res)
+                        alert("系统发生了错误，无法加载数据")
+                    }
+                })
+            },
+            refreshpage() {
+                location.reload()
+            },
+            addintoErrorBook(question_id) {
+                $.ajax({
+                    url: "/shuati_app/addintoErrorBook/",
+                    dataType: "JSON",
+                    type: "get",
+                    data: {
+                        question_id: question_id
+                    },
+                    success: function (res) {
+                        if (res.status) {
+                            tagapp.haveaddintoerrorbook = true
+                        }
+                        alert(res.msg)
+                    },
+                    error: function (res) {
+                        console.log(res)
+                        alert("系统发生了错误，无法加载数据")
+                    }
+                })
+            },
+
+
+        }
+    })
+
+    $(document).ready(function () {
+        tagapp.tag_tag = $("#question_tag").data("tag_tag")
+        tagapp.tag_nid = $("#question_tag").data("tag_nid")
+        tagapp.user_username = $("#question_tag").data("user_username")
+        tagapp.user_email = $("#question_tag").data("user_email")
+        // 获取题目
+        tagapp.getRandomQuestion()
+    });
+
+    // // 防止跳转
+    // // 获取所有的 a 标签
+    // const links = document.querySelectorAll('.outpage');
+    // // 遍历每个 a 标签
+    // links.forEach(link => {
+    //     // 添加点击事件处理程序
+    //     link.addEventListener('click', (event) => {
+    //         // 阻止默认的页面跳转行为
+    //         event.preventDefault();
+
+    //         // 弹出确认框
+    //         const result = confirm('确定离开此页面吗，离开后页面右侧的答题记录将被清空，只能去个人答题记录中查看？');
+
+    //         // 如果用户点击了确定按钮
+    //         if (result) {
+    //             // 获取目标链接
+    //             const href = link.getAttribute('href');
+
+    //             // 进行页面跳转
+    //             window.location.href = href;
+    //         }
+    //     });
+    // });
+</script>
+{% endblock %}

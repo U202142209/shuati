@@ -1,0 +1,164 @@
+{% extends 'base.html'%}
+{% load static %}
+{% block title %}智能在线答题系统{% endblock %}
+{% block css %}
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background-color: #f2f2f2;
+    }
+
+    .container {
+        width: 300px;
+        margin: 0 auto;
+        margin-top: 100px;
+        background-color: #fff;
+        padding: 20px;
+        border-radius: 5px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+
+    h2 {
+        text-align: center;
+        margin-bottom: 20px;
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    .form-group label {
+        display: block;
+        font-weight: bold;
+        margin-bottom: 5px;
+    }
+
+    .form-group input {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 3px;
+    }
+
+    .fontblue {
+        color: blue;
+    }
+</style>
+{% endblock %}
+{% block content %}
+<div class="login-content">
+    <div class="row">
+        <div class="col-md-4 col-xs-1"></div>
+        <div class="col-md-4 col-xs-10 inner">
+            <h1 class="tac fontblue">智能在线刷题平台</h1>
+            <form class="login-form" method="post" action="">
+                <h2 class="tac">登录 / 注册</h2>
+                {% csrf_token %}
+                <div class="row">
+                    <div class="form-group col-xs-12">
+                        <label for="exampleInputEmail1">邮箱</label>
+                        <input type="text" name="email" id="email" class="form-control" value="{{ email }}" required
+                            placeholder="请输入邮箱地址">
+                        <p id="codedisplay" class="fontred"></p>
+                    </div>
+                    <div class="form-group col-xs-12">
+                        <label for="exampleInputPassword1">验证码</label>
+                        <div class="row">
+                            <div class="col-xs-7">
+                                <input type="text" class="form-control" name="code" id="code" required
+                                    placeholder="请输入四位字符邮箱验证码" ">
+                            </div>
+                            <div id="loginapp" class=" col-xs-5">
+                                <button type="button" class="btn button btn-primary" id="getemailcode0"
+                                    @click="sendEmailCode" :disabled="disableButton" v-text="buttonText"></button>
+                            </div>
+                        </div>
+                        <span class="formerror fontred">{{ msg }}</span>
+                    </div>
+                    <div class="form-group col-xs-12">
+                        <button type="submit" class="col-xs-12 btn btn-primary">登录</button>
+                    </div>
+                    <p class="tac">新用户无需注册，使用邮箱验证登录后将自动创建账号</p>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+
+
+{% block js %}
+<script>
+    //判断是否为合法的邮箱
+    function IsEmail(email) {
+        // 正则表达式匹配规则
+        var emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        // 使用正则表达式进行匹配
+        return emailRegex.test(email);
+    }
+    var loginapp = new Vue({
+        el: "#loginapp",
+        data: {
+            disableButton: false,
+            buttonText: '获取邮箱验证码',
+            countdown: 60,
+        },
+        methods: {
+            sendEmailCode() {
+                if (loginapp.disableButton) {
+                    $("#codedisplay").text('验证码已经发送了，无法重复发送，请及时输入验证码完成验证')
+                    $("#codedisplay").toggleClass("fontred")
+                    return;
+                }
+                var thisbutton = this
+                // 调用发送邮箱验证码的函数
+                //获取验证码
+                var email = $("#email").val()
+                console.log("输入的邮箱是；" + email)
+                if (!IsEmail(email)) {
+                    $("#codedisplay").text('请输入有效的邮箱')
+                    $("#codedisplay").toggleClass("fontred")
+                    return
+                } else {
+                    console.log("点击了按钮，即将发送发展吗")
+                    $.ajax({
+                        url: "/shuati_app/getemailcode/",
+                        dataType: "JSON",
+                        type: "get",
+                        data: {
+                            "email": email
+                        },
+                        success: function (res) {
+                            console.log(res)
+                            $("#codedisplay").text(res.msg)
+                            $("#codedisplay").toggleClass("fontgreen")
+                            // 禁用按钮
+                            loginapp.disableButton = true;
+                            // 设置倒计时
+                            loginapp.countdown = 60;
+                            loginapp.startCountdown();
+                        },
+                        error: function (res) {
+                            console.log(res)
+                            $("#codedisplay").text('系统发生了错误：' + res)
+                            $("#codedisplay").toggleClass("fontred")
+                        }
+                    })
+                }
+            },
+
+            startCountdown() {
+                if (loginapp.countdown > 0) {
+                    loginapp.buttonText = `${this.countdown}s`;
+                    loginapp.countdown--;
+                    setTimeout(this.startCountdown, 1000);
+                } else {
+                    loginapp.buttonText = '获取邮箱验证码';
+                    loginapp.disableButton = false;
+                }
+            }
+        }
+    })
+</script>
+{% endblock %}
