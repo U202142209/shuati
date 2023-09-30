@@ -1,10 +1,8 @@
 from django import forms
-from ..models import User
 
 
 class LoginRegisterForm(forms.ModelForm):
     pass
-
 
 # class RegisterForm(forms.ModelForm):
 #     # 新增确认密码
@@ -36,5 +34,3 @@ class LoginRegisterForm(forms.ModelForm):
 #                 "class": "form-control",
 #                 "placeholder": field.label
 #             }
-
-

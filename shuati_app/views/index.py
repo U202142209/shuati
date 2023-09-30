@@ -63,7 +63,6 @@ class LoginView(View):
         request.session.set_expiry(60 * 60 * 24 * 3)
         return redirect("/shuati_app/")
 
-
 def get_captcha(request):
     image, verify = get_verified_image()
     stream = BytesIO()
